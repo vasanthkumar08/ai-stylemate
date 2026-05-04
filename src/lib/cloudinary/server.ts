@@ -1,6 +1,6 @@
 import { Readable } from "node:stream";
 import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
-import { env } from "../../config/env";
+import { env, requireFeatureEnv } from "../../config/env";
 
 export const CLOUDINARY_ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 export const CLOUDINARY_MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -38,25 +38,8 @@ type RetryOptions = {
   shouldRetry?: (error: unknown) => boolean;
 };
 
-function isPlaceholderSecret(value: string | undefined) {
-  if (!value) {
-    return true;
-  }
-
-  const normalized = value.trim().toLowerCase();
-
-  return (
-    normalized === "your_real_secret" ||
-    normalized.startsWith("your_") ||
-    normalized.includes("placeholder") ||
-    normalized.includes("replace_me")
-  );
-}
-
 function assertCloudinaryEnv() {
-  if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || isPlaceholderSecret(env.CLOUDINARY_API_SECRET)) {
-    throw new Error("Cloudinary is not configured. Add real Cloudinary credentials to .env.local.");
-  }
+  requireFeatureEnv("cloudinary", ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"]);
 }
 
 export function getCloudinaryClient(): CloudinaryUploadClient {
@@ -64,10 +47,6 @@ export function getCloudinaryClient(): CloudinaryUploadClient {
   const cloudName = env.CLOUDINARY_CLOUD_NAME;
   const apiKey = env.CLOUDINARY_API_KEY;
   const apiSecret = env.CLOUDINARY_API_SECRET;
-
-  if (!cloudName || !apiKey || !apiSecret || isPlaceholderSecret(apiSecret)) {
-    throw new Error("Cloudinary is not configured. Add real Cloudinary credentials to .env.local.");
-  }
 
   cloudinary.config({
     cloud_name: cloudName,

@@ -32,12 +32,19 @@ const UpgradeToProCard = dynamic(
   }
 );
 
-export function DashboardSidePanel() {
+type DashboardSidePanelProps = {
+  features: {
+    billing: boolean;
+    upload: boolean;
+  };
+};
+
+export function DashboardSidePanel({ features }: DashboardSidePanelProps) {
   return (
     <>
-      <UpgradeToProCard />
+      <UpgradeToProCard billingEnabled={features.billing} />
       <OutfitRecommendationPanel />
-      <WardrobeUploadForm />
+      <WardrobeUploadForm uploadEnabled={features.upload} />
     </>
   );
 }

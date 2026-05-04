@@ -1,4 +1,4 @@
-import { env } from "@/config/env";
+import { env, isOpenAiConfigured } from "@/config/env";
 import type { OutfitContext, OutfitRecommendation } from "./types";
 
 type OpenAiEnhancementResponse = {
@@ -55,7 +55,7 @@ export async function enhanceWithAI(
   recommendation: OutfitRecommendation,
   context: OutfitContext
 ): Promise<OutfitRecommendation> {
-  if (!env.OPENAI_API_KEY) {
+  if (!isOpenAiConfigured()) {
     return recommendation;
   }
 

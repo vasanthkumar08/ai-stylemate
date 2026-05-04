@@ -1,4 +1,4 @@
-import { env } from "@/config/env";
+import { env, isOpenAiConfigured } from "@/config/env";
 
 export type ClothingScanCategory = "Top" | "Bottom" | "Shoes" | "Outerwear";
 export type ClothingScanStyle = "Formal" | "Casual" | "Streetwear";
@@ -141,8 +141,8 @@ function fallbackAnalyzeClothing(input: AnalyzeClothingInput): ClothingScanResul
 }
 
 async function analyzeWithOpenAi(input: AnalyzeClothingInput): Promise<ClothingScanResult> {
-  if (!env.OPENAI_API_KEY) {
-    throw new Error("OpenAI API key is not configured.");
+  if (!isOpenAiConfigured()) {
+    throw new Error("AI scan unavailable.");
   }
 
   const response = await fetch("https://api.openai.com/v1/responses", {

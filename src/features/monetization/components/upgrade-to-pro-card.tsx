@@ -35,7 +35,7 @@ function UsageBar({ label, used, limit }: { label: string; used: number; limit: 
   );
 }
 
-export function UpgradeToProCard() {
+export function UpgradeToProCard({ billingEnabled = true }: { billingEnabled?: boolean }) {
   const [usage, setUsage] = useState<Usage | null>(null);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export function UpgradeToProCard() {
         <UsageBar label="AI scans today" used={usage.aiScansUsedToday} limit={usage.aiScanLimit} />
       </div>
 
-      {!isPro ? (
+      {!isPro && billingEnabled ? (
         <>
           <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
             Smart Upgrade unlocks unlimited outfits, unlimited scans, advanced AI recommendations, and priority responses.
@@ -105,6 +105,10 @@ export function UpgradeToProCard() {
           </div>
           <UpgradeButton className="mt-4 w-full" />
         </>
+      ) : !isPro ? (
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-800">
+          Billing temporarily unavailable.
+        </p>
       ) : (
         <p className="mt-4 text-sm leading-6 text-[var(--muted)]">
           You have unlimited outfit generation, scans, priority response, and better styling suggestions.

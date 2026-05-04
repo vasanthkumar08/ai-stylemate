@@ -3,9 +3,11 @@ import { AuthCard } from "@/features/auth/components/auth-card";
 import { GoogleAuthButton } from "@/features/auth/components/google-auth-button";
 import { SignupForm } from "@/features/auth/components/signup-form";
 import { getCsrfToken } from "@/lib/auth/csrf-token";
+import { isSupabaseAuthConfigured } from "@/lib/env";
 
 export default async function SignupPage() {
   const csrfToken = await getCsrfToken();
+  const isAuthConfigured = isSupabaseAuthConfigured();
 
   return (
     <AuthCard
@@ -27,7 +29,13 @@ export default async function SignupPage() {
           or
           <span className="h-px flex-1 bg-[var(--border)]" />
         </div>
-        <SignupForm csrfToken={csrfToken} />
+        {isAuthConfigured ? (
+          <SignupForm csrfToken={csrfToken} />
+        ) : (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            Authentication temporarily unavailable.
+          </p>
+        )}
       </div>
     </AuthCard>
   );

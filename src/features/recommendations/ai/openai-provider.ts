@@ -1,4 +1,4 @@
-import { env } from "@/config/env";
+import { env, requireFeatureEnv } from "@/config/env";
 import { generateOutfitRecommendations } from "@/features/recommendations/engine";
 import type {
   AiRecommendationRequest,
@@ -147,9 +147,7 @@ export class OpenAiOutfitProvider implements OutfitAiProvider {
   model = env.OPENAI_VISION_MODEL;
 
   async generateRecommendations(request: AiRecommendationRequest): Promise<AiRecommendationResult> {
-    if (!env.OPENAI_API_KEY) {
-      throw new Error("OpenAI API key is not configured.");
-    }
+    requireFeatureEnv("openai", ["OPENAI_API_KEY"]);
 
     const ruleSeeds = generateOutfitRecommendations({
       occasion: request.occasion,

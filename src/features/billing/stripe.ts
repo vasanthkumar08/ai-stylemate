@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { env } from "@/config/env";
+import { env, requireFeatureEnv } from "@/config/env";
 
 export type StripeCheckoutSession = {
   id: string;
@@ -17,9 +17,7 @@ export type StripeEvent = {
 type StripeObject = Record<string, unknown>;
 
 function assertStripeConfigured() {
-  if (!env.STRIPE_SECRET_KEY || !env.STRIPE_PRO_PRICE_ID) {
-    throw new Error("Stripe checkout is not configured.");
-  }
+  requireFeatureEnv("stripe", ["STRIPE_SECRET_KEY", "STRIPE_PRO_PRICE_ID"]);
 }
 
 function append(params: URLSearchParams, key: string, value: string | number | boolean | null | undefined) {
@@ -88,9 +86,7 @@ function getSignatureParts(signature: string) {
 }
 
 export function verifyStripeWebhook(rawBody: string, signature: string | null) {
-  if (!env.STRIPE_WEBHOOK_SECRET) {
-    throw new Error("Stripe webhook secret is not configured.");
-  }
+  requireFeatureEnv("stripe", ["STRIPE_WEBHOOK_SECRET"]);
 
   if (!signature) {
     throw new Error("Missing Stripe signature.");

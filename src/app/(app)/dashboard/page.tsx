@@ -2,6 +2,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { DashboardSidePanel } from "./dashboard-side-panel";
 import { WardrobeDashboard, type WardrobeDashboardItem } from "@/features/wardrobe/components/wardrobe-dashboard";
 import { seedDemoWardrobeForNewUser } from "@/features/wardrobe/demo-items";
+import { isCloudinaryConfigured, isStripeCheckoutConfigured } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -102,13 +103,17 @@ async function getWardrobeItems(): Promise<WardrobeDashboardItem[]> {
 
 export default async function DashboardPage() {
   const wardrobeItems = await getWardrobeItems();
+  const features = {
+    billing: isStripeCheckoutConfigured(),
+    upload: isCloudinaryConfigured()
+  };
 
   return (
     <AppShell>
       <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <WardrobeDashboard items={wardrobeItems} />
         <aside className="grid min-w-0 gap-6 xl:sticky xl:top-24 xl:self-start">
-          <DashboardSidePanel />
+          <DashboardSidePanel features={features} />
         </aside>
       </div>
     </AppShell>

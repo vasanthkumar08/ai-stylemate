@@ -1,10 +1,10 @@
-import { env } from "@/config/env";
+import { isOpenAiConfigured } from "@/config/env";
 import { RuleFallbackProvider } from "./fallback-provider";
 import { OpenAiOutfitProvider } from "./openai-provider";
 import type { OutfitAiProvider } from "./types";
 
 export function createOutfitAiProvider(): OutfitAiProvider {
-  if (env.OPENAI_API_KEY) {
+  if (isOpenAiConfigured()) {
     return new OpenAiOutfitProvider();
   }
 

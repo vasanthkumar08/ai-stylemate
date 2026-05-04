@@ -8,7 +8,7 @@ export function createSupabaseBrowserClient() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Missing public Supabase environment variables.");
+    throw new Error("Authentication temporarily unavailable.");
   }
 
   return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);

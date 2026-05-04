@@ -20,6 +20,9 @@ function getConfiguredOrigin() {
 
 export function GoogleAuthButton() {
   const [isLoading, setIsLoading] = useState(false);
+  const isAuthConfigured =
+    Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
+    Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
   async function signInWithGoogle() {
     setIsLoading(true);
@@ -58,7 +61,7 @@ export function GoogleAuthButton() {
   return (
     <Button
       className="w-full"
-      disabled={isLoading}
+      disabled={isLoading || !isAuthConfigured}
       size="lg"
       type="button"
       variant="secondary"
@@ -71,7 +74,7 @@ export function GoogleAuthButton() {
           G
         </span>
       )}
-      Continue with Google
+      {isAuthConfigured ? "Continue with Google" : "Authentication temporarily unavailable"}
     </Button>
   );
 }

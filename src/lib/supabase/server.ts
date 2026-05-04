@@ -1,12 +1,10 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
-import { env } from "@/config/env";
+import { env, requireFeatureEnv } from "@/config/env";
 import type { Database } from "@/types/database";
 
 export async function createSupabaseServerClient() {
-  if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    throw new Error("Missing public Supabase environment variables.");
-  }
+  requireFeatureEnv("auth", ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]);
 
   const cookieStore = await cookies();
 

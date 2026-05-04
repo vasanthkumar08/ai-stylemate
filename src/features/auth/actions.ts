@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { env } from "@/config/env";
+import { env, isSupabaseAuthConfigured } from "@/config/env";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route-handler";
 import {
   type AuthActionState,
@@ -196,7 +196,7 @@ export async function signInWithGoogleAction(formData: FormData) {
   try {
     await validateAuthAction("google", formData);
 
-    if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    if (!isSupabaseAuthConfigured()) {
       url = "/login?error=missing-supabase";
     } else {
       const supabase = await createSupabaseRouteHandlerClient();

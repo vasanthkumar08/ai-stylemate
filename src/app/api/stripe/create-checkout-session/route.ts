@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createProCheckoutSession } from "@/features/billing/stripe";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route-handler";
+import { isStripeCheckoutConfigured } from "@/lib/env";
 import { applySecurityHeaders, assertTrustedPost, jsonError } from "@/lib/security/http";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
@@ -12,6 +13,10 @@ const checkoutRequestSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  if (!isStripeCheckoutConfigured()) {
+    return jsonError("Billing temporarily unavailable.", 503);
+  }
+
   const limited = checkRateLimit(request, {
     bucket: "stripe-checkout",
     windowMs: 60_000,

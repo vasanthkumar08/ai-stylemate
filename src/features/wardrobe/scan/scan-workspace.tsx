@@ -169,7 +169,13 @@ async function compressImage(file: File) {
   });
 }
 
-export function ScanWorkspace({ initialUsage }: { initialUsage: ScanUsage }) {
+export function ScanWorkspace({
+  billingEnabled = true,
+  initialUsage
+}: {
+  billingEnabled?: boolean;
+  initialUsage: ScanUsage;
+}) {
   const router = useRouter();
   const { toast, ToastViewport } = useToast();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -394,7 +400,7 @@ export function ScanWorkspace({ initialUsage }: { initialUsage: ScanUsage }) {
               ))}
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <UpgradeButton className="h-11 rounded-xl" />
+              <UpgradeButton className="h-11 rounded-xl" disabled={!billingEnabled} />
               <Button className="h-11 rounded-xl" variant="secondary" onClick={() => setIsUpgradeModalOpen(false)}>
                 Maybe Later
               </Button>
@@ -533,7 +539,7 @@ export function ScanWorkspace({ initialUsage }: { initialUsage: ScanUsage }) {
                     Free plan includes {upgradePrompt.aiScanLimit ?? 10} AI scans per day. Pro adds unlimited scans, advanced recommendations, and priority responses.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <UpgradeButton className="rounded-xl" />
+                    <UpgradeButton className="rounded-xl" disabled={!billingEnabled} />
                     <Button className="rounded-xl" variant="secondary" onClick={() => setIsUpgradeModalOpen(true)}>
                       View benefits
                     </Button>

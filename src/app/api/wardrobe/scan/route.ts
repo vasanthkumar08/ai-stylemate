@@ -14,6 +14,7 @@ import { applySecurityHeaders, assertTrustedPost, jsonError } from "@/lib/securi
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getAppUserRole } from "@/roles/service";
+import { isCloudinaryConfigured, isOpenAiConfigured } from "@/lib/env";
 
 export const runtime = "nodejs";
 
@@ -70,6 +71,18 @@ async function getSuggestions(userId: string, metadata: ClothingScanResult) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isOpenAiConfigured()) {
+    return applySecurityHeaders(
+      NextResponse.json({ error: "AI scan unavailable.", setupRequired: true }, { status: 503 })
+    );
+  }
+
+  if (!isCloudinaryConfigured()) {
+    return applySecurityHeaders(
+      NextResponse.json({ error: "Cloudinary upload unavailable.", setupRequired: true }, { status: 503 })
+    );
+  }
+
   const limited = checkRateLimit(request, {
     bucket: "wardrobe-scan",
     windowMs: 60_000,
@@ -166,7 +179,7 @@ export async function POST(request: NextRequest) {
     return applySecurityHeaders(
       NextResponse.json(
         {
-          error: "Cloudinary upload is not configured correctly. Add a real CLOUDINARY_API_SECRET in .env.local, then restart the dev server.",
+          error: "Cloudinary upload unavailable.",
           setupRequired: true
         },
         { status: 503 }

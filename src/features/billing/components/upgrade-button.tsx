@@ -5,7 +5,7 @@ import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export function UpgradeButton({ className }: { className?: string }) {
+export function UpgradeButton({ className, disabled = false }: { className?: string; disabled?: boolean }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,9 +40,9 @@ export function UpgradeButton({ className }: { className?: string }) {
 
   return (
     <div className="grid gap-2">
-      <Button className={cn("gradient-button text-white", className)} disabled={isLoading} onClick={() => void startCheckout()}>
+      <Button className={cn("gradient-button text-white", className)} disabled={disabled || isLoading} onClick={() => void startCheckout()}>
         {isLoading ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Sparkles className="size-4" aria-hidden="true" />}
-        Upgrade Now
+        {disabled ? "Billing unavailable" : "Upgrade Now"}
       </Button>
       {error ? <p className="text-xs leading-5 text-red-600">{error}</p> : null}
     </div>

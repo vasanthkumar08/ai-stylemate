@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { env } from "@/config/env";
+import { env, isSupabaseAuthConfigured } from "@/config/env";
 import { CSRF_COOKIE_NAME } from "@/lib/auth/constants";
 import { applySecurityHeaders } from "@/lib/security/http";
 import { checkRateLimit } from "@/lib/security/rate-limit";
@@ -102,11 +102,18 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(response);
   }
 
-  if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    if (isProtectedPath(pathname) || (isApiPath(pathname) && !isPublicApiPath(pathname))) {
+  if (!isSupabaseAuthConfigured()) {
+    if (isApiPath(pathname) && !isPublicApiPath(pathname)) {
       return applySecurityHeaders(
-        NextResponse.json({ error: "Authentication is not configured." }, { status: 503 })
+        NextResponse.json({ error: "Authentication temporarily unavailable." }, { status: 503 })
       );
+    }
+
+    if (isProtectedPath(pathname)) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/login";
+      redirectUrl.searchParams.set("error", "missing-supabase");
+      return applySecurityHeaders(NextResponse.redirect(redirectUrl));
     }
 
     return applySecurityHeaders(response);

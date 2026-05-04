@@ -173,7 +173,7 @@ function uploadWithProgress(formData: FormData, onProgress: (progress: number) =
   });
 }
 
-export function WardrobeUploadForm() {
+export function WardrobeUploadForm({ uploadEnabled = true }: { uploadEnabled?: boolean }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<UploadFile[]>([]);
@@ -191,6 +191,11 @@ export function WardrobeUploadForm() {
   }, [files]);
 
   async function addFiles(fileList: FileList | File[]) {
+    if (!uploadEnabled) {
+      setFormError("Cloudinary upload unavailable.");
+      return;
+    }
+
     const incomingFiles = Array.from(fileList);
     setFormError(null);
 
@@ -379,7 +384,11 @@ export function WardrobeUploadForm() {
             ? "border-[var(--accent)] bg-[var(--surface-subtle)]"
             : "border-[#c6c9e7]/80 bg-white/70 hover:border-[#363b6c] hover:bg-white"
         )}
-        onClick={() => inputRef.current?.click()}
+        onClick={() => {
+          if (uploadEnabled) {
+            inputRef.current?.click();
+          }
+        }}
         onDragEnter={(event) => {
           event.preventDefault();
           setIsDragging(true);
@@ -392,7 +401,9 @@ export function WardrobeUploadForm() {
         onDrop={(event) => {
           event.preventDefault();
           setIsDragging(false);
-          void addFiles(event.dataTransfer.files);
+          if (uploadEnabled) {
+            void addFiles(event.dataTransfer.files);
+          }
         }}
         role="button"
         tabIndex={0}
@@ -416,7 +427,9 @@ export function WardrobeUploadForm() {
           </span>
           <p className="mt-4 font-medium">Drag images here or browse</p>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            JPEG, PNG, or WebP. Up to {formatBytes(maxOriginalBytes)} before compression.
+            {uploadEnabled
+              ? `JPEG, PNG, or WebP. Up to ${formatBytes(maxOriginalBytes)} before compression.`
+              : "Cloudinary upload unavailable."}
           </p>
         </div>
       </div>
@@ -585,7 +598,7 @@ export function WardrobeUploadForm() {
 
       <Button
         className="mt-5 w-full"
-        disabled={!files.length || uploadableFiles.length === 0}
+        disabled={!uploadEnabled || !files.length || uploadableFiles.length === 0}
         type="button"
         onClick={() => void uploadAll()}
       >

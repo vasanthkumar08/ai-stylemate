@@ -15,6 +15,7 @@ import {
 } from "@/lib/cloudinary/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route-handler";
+import { isCloudinaryConfigured } from "@/lib/env";
 import { logSecurityEvent } from "@/lib/security/anomaly";
 import { applySecurityHeaders, assertTrustedPost, jsonError } from "@/lib/security/http";
 import { checkRateLimit } from "@/lib/security/rate-limit";
@@ -24,6 +25,10 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   const adminClient = createSupabaseAdminClient();
+  if (!isCloudinaryConfigured()) {
+    return jsonError("Cloudinary upload unavailable.", 503);
+  }
+
   const limited = checkRateLimit(request, {
     bucket: "wardrobe-upload",
     windowMs: 60_000,

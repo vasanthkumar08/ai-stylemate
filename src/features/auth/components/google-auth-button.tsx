@@ -3,43 +3,47 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { normalizePostAuthRedirect } from "@/lib/auth/redirect";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
-function getOAuthRedirectTo() {
-  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const origin = configuredAppUrl ? new URL(configuredAppUrl).origin : window.location.origin;
+type GoogleAuthButtonProps = {
+  nextPath?: string;
+};
 
-  return `${origin}/auth/callback?next=/dashboard`;
+function getOAuthRedirectTo(nextPath: string) {
+  const callbackUrl = new URL("/auth/callback", window.location.origin);
+  callbackUrl.searchParams.set("next", normalizePostAuthRedirect(nextPath));
+
+  return callbackUrl.toString();
 }
 
-function getConfiguredOrigin() {
-  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL;
-
-  return configuredAppUrl ? new URL(configuredAppUrl).origin : window.location.origin;
-}
-
-export function GoogleAuthButton() {
+export function GoogleAuthButton({ nextPath = "/dashboard" }: GoogleAuthButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const isAuthConfigured =
     Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
     Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
   async function signInWithGoogle() {
+    if (isLoading) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const configuredOrigin = getConfiguredOrigin();
-
-      if (window.location.origin !== configuredOrigin) {
-        window.location.href = `${configuredOrigin}/login`;
-        return;
-      }
-
       const supabase = createSupabaseBrowserClient();
+      const redirectTo = getOAuthRedirectTo(nextPath);
+
+      console.info("[stylemate-oauth-start]", {
+        provider: "google",
+        next: normalizePostAuthRedirect(nextPath),
+        origin: window.location.origin
+      });
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: getOAuthRedirectTo(),
+          redirectTo,
           queryParams: {
             prompt: "select_account"
           }

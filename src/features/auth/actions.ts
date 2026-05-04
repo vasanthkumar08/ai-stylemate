@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { env, isSupabaseAuthConfigured } from "@/config/env";
+import { isSupabaseAuthConfigured } from "@/config/env";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route-handler";
 import {
   type AuthActionState,
@@ -15,6 +15,7 @@ import {
   resetPasswordSchema,
   signupSchema
 } from "./schemas";
+import { normalizePostAuthRedirect } from "@/lib/auth/redirect";
 import { sanitizeText } from "@/lib/security/sanitize";
 
 function zodFieldErrors(error: { flatten: () => { fieldErrors: Record<string, string[]> } }) {
@@ -24,10 +25,6 @@ function zodFieldErrors(error: { flatten: () => { fieldErrors: Record<string, st
       messages[0] ?? "Invalid value."
     ])
   );
-}
-
-function getOAuthRedirectOrigin() {
-  return new URL(env.NEXT_PUBLIC_APP_URL).origin;
 }
 
 export async function loginAction(
@@ -60,12 +57,9 @@ export async function loginAction(
   }
 
   const requestedNext = formData.get("next");
-  const nextPath =
-    typeof requestedNext === "string" &&
-    requestedNext.startsWith("/") &&
-    !requestedNext.startsWith("//")
-      ? requestedNext
-      : "/dashboard";
+  const nextPath = normalizePostAuthRedirect(
+    typeof requestedNext === "string" ? requestedNext : null
+  );
 
   redirect(nextPath as never);
 }
@@ -74,6 +68,8 @@ export async function signupAction(
   _previousState: AuthActionState,
   formData: FormData
 ): Promise<AuthActionState> {
+  let shouldRedirectToDashboard = false;
+
   try {
     await validateAuthAction("signup", formData);
     const parsed = signupSchema.safeParse(Object.fromEntries(formData));
@@ -88,7 +84,7 @@ export async function signupAction(
 
     const supabase = await createSupabaseRouteHandlerClient();
     const requestOrigin = await getRequestOrigin();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
       options: {
@@ -104,13 +100,33 @@ export async function signupAction(
       return { status: "error", message: error.message };
     }
 
-    return {
-      status: "success",
-      message: "Account created. Check your email to confirm your address."
-    };
+    shouldRedirectToDashboard = Boolean(data.session);
+
+    if (!shouldRedirectToDashboard) {
+      return {
+        status: "success",
+        message: "Account created. Check your email to confirm your address."
+      };
+    }
+
+    if (shouldRedirectToDashboard) {
+      console.info("[stylemate-auth-signup]", {
+        sessionCreated: true,
+        redirectTarget: "/dashboard"
+      });
+    }
   } catch (error) {
     return { status: "error", message: getAuthErrorMessage(error) };
   }
+
+  if (shouldRedirectToDashboard) {
+    redirect("/dashboard" as never);
+  }
+
+  return {
+    status: "success",
+    message: "Account created. Check your email to confirm your address."
+  };
 }
 
 export async function forgotPasswordAction(
@@ -200,7 +216,12 @@ export async function signInWithGoogleAction(formData: FormData) {
       url = "/login?error=missing-supabase";
     } else {
       const supabase = await createSupabaseRouteHandlerClient();
-      const requestOrigin = getOAuthRedirectOrigin();
+      const requestOrigin = await getRequestOrigin();
+      console.info("[stylemate-oauth-start]", {
+        provider: "google",
+        next: "/dashboard",
+        origin: requestOrigin
+      });
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {

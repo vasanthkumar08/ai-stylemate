@@ -2,12 +2,13 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { env, isSupabaseAuthConfigured } from "@/config/env";
 import { CSRF_COOKIE_NAME } from "@/lib/auth/constants";
+import { normalizePostAuthRedirect } from "@/lib/auth/redirect";
 import { applySecurityHeaders } from "@/lib/security/http";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getAppUserRole, isActiveAdmin } from "@/roles/service";
 import type { Database } from "@/types/database";
 
-const protectedRoutes = ["/dashboard", "/admin", "/outfits", "/scan", "/profile"];
+const protectedRoutes = ["/dashboard", "/admin", "/wardrobe", "/outfits", "/scan", "/profile"];
 const authRoutes = ["/login", "/signup", "/forgot-password", "/reset-password"];
 const publicApiRoutes = ["/api/health", "/api/stripe/webhook", "/api/cron/reset-usage"];
 
@@ -29,6 +30,34 @@ function isPublicApiPath(pathname: string) {
 
 function isAdminPath(pathname: string) {
   return pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/api/admin/");
+}
+
+function originalPathWithSearch(request: NextRequest) {
+  return `${request.nextUrl.pathname}${request.nextUrl.search}`;
+}
+
+function logMiddlewareAuthState(
+  request: NextRequest,
+  state: {
+    action: string;
+    authenticated: boolean;
+    protectedPath: boolean;
+    authPath: boolean;
+    apiPath: boolean;
+  }
+) {
+  if (!state.protectedPath && !state.authPath && !state.apiPath) {
+    return;
+  }
+
+  console.info("[stylemate-middleware-auth]", {
+    path: request.nextUrl.pathname,
+    action: state.action,
+    authenticated: state.authenticated,
+    protectedPath: state.protectedPath,
+    authPath: state.authPath,
+    apiPath: state.apiPath
+  });
 }
 
 function rateLimitAuthRequest(request: NextRequest) {
@@ -97,19 +126,36 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isOAuthCallback = pathname === "/auth/callback" || pathname.startsWith("/auth/callback/");
+  const protectedPath = isProtectedPath(pathname);
+  const authPath = isAuthPath(pathname);
+  const apiPath = isApiPath(pathname);
 
   if (isOAuthCallback) {
     return applySecurityHeaders(response);
   }
 
   if (!isSupabaseAuthConfigured()) {
-    if (isApiPath(pathname) && !isPublicApiPath(pathname)) {
+    if (apiPath && !isPublicApiPath(pathname)) {
+      logMiddlewareAuthState(request, {
+        action: "missing-auth-config-api",
+        authenticated: false,
+        protectedPath,
+        authPath,
+        apiPath
+      });
       return applySecurityHeaders(
         NextResponse.json({ error: "Authentication temporarily unavailable." }, { status: 503 })
       );
     }
 
-    if (isProtectedPath(pathname)) {
+    if (protectedPath) {
+      logMiddlewareAuthState(request, {
+        action: "missing-auth-config-protected",
+        authenticated: false,
+        protectedPath,
+        authPath,
+        apiPath
+      });
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/login";
       redirectUrl.searchParams.set("error", "missing-supabase");
@@ -141,9 +187,18 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user }
   } = await supabase.auth.getUser();
-  const needsAuthenticatedUser = isProtectedPath(pathname) || (isApiPath(pathname) && !isPublicApiPath(pathname));
+  const authenticated = Boolean(user);
+  const needsAuthenticatedUser = protectedPath || (apiPath && !isPublicApiPath(pathname));
 
   if (needsAuthenticatedUser && !user) {
+    logMiddlewareAuthState(request, {
+      action: "guest-redirect",
+      authenticated,
+      protectedPath,
+      authPath,
+      apiPath
+    });
+
     if (isApiPath(pathname)) {
       return applySecurityHeaders(
         NextResponse.json({ error: "Authentication required." }, { status: 401 })
@@ -152,7 +207,7 @@ export async function middleware(request: NextRequest) {
 
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
-    redirectUrl.searchParams.set("next", pathname);
+    redirectUrl.searchParams.set("next", normalizePostAuthRedirect(originalPathWithSearch(request)));
     return applySecurityHeaders(NextResponse.redirect(redirectUrl));
   }
 
@@ -170,9 +225,24 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (isAuthPath(pathname) && user && pathname !== "/reset-password") {
+  if (authPath && user && pathname !== "/reset-password") {
+    logMiddlewareAuthState(request, {
+      action: "authenticated-auth-page-redirect",
+      authenticated,
+      protectedPath,
+      authPath,
+      apiPath
+    });
     return applySecurityHeaders(NextResponse.redirect(new URL("/dashboard", request.url)));
   }
+
+  logMiddlewareAuthState(request, {
+    action: "pass",
+    authenticated,
+    protectedPath,
+    authPath,
+    apiPath
+  });
 
   return setCsrfCookieIfNeeded(request, response);
 }

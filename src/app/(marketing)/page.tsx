@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowRight,
   CalendarDays,
   Check,
   ChevronRight,
@@ -18,6 +17,7 @@ import {
   Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StartFreeButton } from "./start-free-button";
 
 export const metadata: Metadata = {
   title: "StyleMate AI | AI Wardrobe Styling SaaS",
@@ -164,12 +164,7 @@ export default function HomePage() {
             <a href="#pricing">Pricing</a>
             <a href="#faq">FAQ</a>
           </div>
-          <Button asChild size="sm">
-            <Link href={{ pathname: "/signup" }}>
-              Start free
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </Button>
+          <StartFreeButton label="Start free" size="sm" />
         </nav>
       </header>
 
@@ -188,12 +183,7 @@ export default function HomePage() {
               weather, travel, occasions, seasons, and personal taste.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg">
-                <Link href={{ pathname: "/signup" }}>
-                  Start Free
-                  <ArrowRight className="size-4" aria-hidden="true" />
-                </Link>
-              </Button>
+              <StartFreeButton />
               <Button asChild variant="secondary" size="lg">
                 <a href="#demo">
                   Watch demo

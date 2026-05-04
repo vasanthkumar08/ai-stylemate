@@ -79,22 +79,54 @@ export type Database = {
       profiles: {
         Row: {
           id: string;
-          email: string | null;
+          user_id: string;
           display_name: string | null;
+          username: string | null;
+          bio: string | null;
+          location: string | null;
+          gender: string | null;
+          birthdate: string | null;
+          body_type: string | null;
+          height_cm: number | null;
+          measurements: Json;
+          preferred_avatar_url: string | null;
+          onboarding_completed_at: string | null;
           created_at: string;
           updated_at: string;
+          deleted_at: string | null;
         };
         Insert: {
-          id: string;
-          email?: string | null;
+          id?: string;
+          user_id: string;
           display_name?: string | null;
+          username?: string | null;
+          bio?: string | null;
+          location?: string | null;
+          gender?: string | null;
+          birthdate?: string | null;
+          body_type?: string | null;
+          height_cm?: number | null;
+          measurements?: Json;
+          preferred_avatar_url?: string | null;
+          onboarding_completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
+          deleted_at?: string | null;
         };
         Update: {
-          email?: string | null;
           display_name?: string | null;
+          username?: string | null;
+          bio?: string | null;
+          location?: string | null;
+          gender?: string | null;
+          birthdate?: string | null;
+          body_type?: string | null;
+          height_cm?: number | null;
+          measurements?: Json;
+          preferred_avatar_url?: string | null;
+          onboarding_completed_at?: string | null;
           updated_at?: string;
+          deleted_at?: string | null;
         };
         Relationships: [];
       };

@@ -188,10 +188,7 @@ function setCsrfCookieIfNeeded(request: NextRequest, response: NextResponse) {
 
   const token = crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "");
 
-  const targetResponse =
-    request.method === "GET" ? NextResponse.redirect(request.nextUrl) : response;
-
-  targetResponse.cookies.set(CSRF_COOKIE_NAME, token, {
+  response.cookies.set(CSRF_COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "strict",
     secure: request.nextUrl.protocol === "https:",
@@ -199,7 +196,7 @@ function setCsrfCookieIfNeeded(request: NextRequest, response: NextResponse) {
     maxAge: 60 * 60
   });
 
-  return applySecurityHeaders(targetResponse);
+  return applySecurityHeaders(response);
 }
 
 export async function middleware(request: NextRequest) {
@@ -343,7 +340,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (authPath && user && pathname !== "/reset-password") {
+  if (authPath && user && pathname !== "/reset-password" && !request.nextUrl.searchParams.has("next")) {
     logMiddlewareAuthState(request, {
       action: "authenticated-auth-page-redirect",
       authenticated,

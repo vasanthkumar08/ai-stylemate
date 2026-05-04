@@ -1,0 +1,14 @@
+import type { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "StyleMate AI",
+    short_name: "StyleMate",
+    description: "AI wardrobe styling for outfits that fit the real day ahead.",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#f8fbff",
+    theme_color: "#2563eb",
+    icons: []
+  };
+}

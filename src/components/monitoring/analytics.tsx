@@ -2,7 +2,6 @@
 
 import Script from "next/script";
 import { useReportWebVitals } from "next/web-vitals";
-import { env } from "@/config/env";
 
 declare global {
   interface Window {
@@ -12,7 +11,7 @@ declare global {
 }
 
 function sendAnalyticsEvent(name: string, payload: Record<string, unknown>) {
-  if (!env.NEXT_PUBLIC_ANALYTICS_ENABLED) {
+  if (process.env.NEXT_PUBLIC_ANALYTICS_ENABLED !== "true") {
     return;
   }
 
@@ -39,6 +38,8 @@ function sendAnalyticsEvent(name: string, payload: Record<string, unknown>) {
 }
 
 export function Analytics() {
+  const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
   useReportWebVitals((metric) => {
     sendAnalyticsEvent("web_vital", {
       id: metric.id,
@@ -57,14 +58,14 @@ export function Analytics() {
     }
   });
 
-  if (!env.NEXT_PUBLIC_ANALYTICS_ENABLED || !env.NEXT_PUBLIC_GA_MEASUREMENT_ID) {
+  if (process.env.NEXT_PUBLIC_ANALYTICS_ENABLED !== "true" || !measurementId) {
     return null;
   }
 
   return (
     <>
       <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
+        src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
         strategy="afterInteractive"
       />
       <Script id="stylemate-ga" strategy="afterInteractive">
@@ -72,7 +73,7 @@ export function Analytics() {
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
-          gtag('config', '${env.NEXT_PUBLIC_GA_MEASUREMENT_ID}', { anonymize_ip: true });
+          gtag('config', '${measurementId}', { anonymize_ip: true });
         `}
       </Script>
     </>

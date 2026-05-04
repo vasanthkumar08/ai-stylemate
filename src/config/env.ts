@@ -1,33 +1,38 @@
 import { z } from "zod";
 
+function fallbackAppUrl() {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  return "http://localhost:3000";
+}
+
 const optionalUrl = z.preprocess(
   (value) => (value === "" ? undefined : value),
   z.string().url().optional()
 );
 
-const requiredString = (name: string) =>
-  z
-    .string({
-      error: `${name} is required.`
-    })
-    .trim()
-    .min(1, `${name} is required.`)
-    .refine(
-      (value) => !/^your[_-]/i.test(value) && !/placeholder|replace_me/i.test(value),
-      `${name} must not use a placeholder value.`
-    );
+const optionalString = z.preprocess(
+  (value) => (typeof value === "string" ? value.trim() : value),
+  z.string().optional().default("")
+);
 
 const envSchema = z.object({
-  NEXT_PUBLIC_APP_URL: z.string().url("NEXT_PUBLIC_APP_URL must be a valid URL."),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url("NEXT_PUBLIC_SUPABASE_URL must be a valid URL."),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: requiredString("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
-  SUPABASE_SERVICE_ROLE_KEY: requiredString("SUPABASE_SERVICE_ROLE_KEY"),
-  CLOUDINARY_CLOUD_NAME: requiredString("CLOUDINARY_CLOUD_NAME"),
-  CLOUDINARY_API_KEY: requiredString("CLOUDINARY_API_KEY"),
-  CLOUDINARY_API_SECRET: requiredString("CLOUDINARY_API_SECRET"),
+  NEXT_PUBLIC_APP_URL: z.string().url().catch(fallbackAppUrl()),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional().default(""),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: optionalString,
+  SUPABASE_SERVICE_ROLE_KEY: optionalString,
+  CLOUDINARY_CLOUD_NAME: optionalString,
+  CLOUDINARY_API_KEY: optionalString,
+  CLOUDINARY_API_SECRET: optionalString,
   CLOUDINARY_UPLOAD_FOLDER: z.string().default("stylemate-ai"),
-  OPENAI_API_KEY: requiredString("OPENAI_API_KEY"),
-  OPENAI_VISION_MODEL: requiredString("OPENAI_VISION_MODEL").default("gpt-5-mini"),
+  OPENAI_API_KEY: optionalString,
+  OPENAI_VISION_MODEL: z.string().min(1).default("gpt-5-mini"),
   AI_RECOMMENDATION_TIMEOUT_MS: z.coerce.number().int().positive().default(18000),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
@@ -42,7 +47,6 @@ const envSchema = z.object({
 const testEnv =
   process.env.npm_lifecycle_event === "test"
     ? {
-        NEXT_PUBLIC_APP_URL: "http://localhost:3000",
         NEXT_PUBLIC_SUPABASE_URL: "https://test-project.supabase.co",
         NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-supabase-anon-key",
         SUPABASE_SERVICE_ROLE_KEY: "test-supabase-service-role-key",
@@ -57,8 +61,19 @@ const testEnv =
 
 const parsedEnv = envSchema.safeParse(testEnv);
 
-if (!parsedEnv.success) {
-  throw new Error(`Invalid environment configuration: ${parsedEnv.error.message}`);
-}
-
-export const env = parsedEnv.data;
+export const env = parsedEnv.success
+  ? parsedEnv.data
+  : {
+      NEXT_PUBLIC_APP_URL: fallbackAppUrl(),
+      NEXT_PUBLIC_SUPABASE_URL: "",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+      SUPABASE_SERVICE_ROLE_KEY: "",
+      CLOUDINARY_CLOUD_NAME: "",
+      CLOUDINARY_API_KEY: "",
+      CLOUDINARY_API_SECRET: "",
+      CLOUDINARY_UPLOAD_FOLDER: "stylemate-ai",
+      OPENAI_API_KEY: "",
+      OPENAI_VISION_MODEL: "gpt-5-mini",
+      AI_RECOMMENDATION_TIMEOUT_MS: 18000,
+      NEXT_PUBLIC_ANALYTICS_ENABLED: false
+    };

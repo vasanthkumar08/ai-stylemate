@@ -3,7 +3,6 @@ import { Geist_Mono, Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import { Analytics } from "@/components/monitoring/analytics";
 import { ErrorMonitor } from "@/components/monitoring/error-monitor";
-import { env } from "@/config/env";
 import "./globals.css";
 
 const inter = Inter({
@@ -16,6 +15,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"]
 });
 
+function getMetadataBase() {
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
+  return new URL(appUrl);
+}
+
 export const metadata: Metadata = {
   title: {
     default: "StyleMate AI",
@@ -24,7 +31,7 @@ export const metadata: Metadata = {
   description:
     "AI outfit recommendations from your wardrobe, weather, occasions, vacations, seasons, and style preferences.",
   applicationName: "StyleMate AI",
-  metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
+  metadataBase: getMetadataBase(),
   keywords: [
     "AI wardrobe",
     "outfit recommendations",

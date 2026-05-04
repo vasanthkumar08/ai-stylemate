@@ -14,7 +14,7 @@ function fallbackAppUrl() {
 
 const optionalUrl = z.preprocess(
   (value) => (value === "" ? undefined : value),
-  z.string().url().optional()
+  z.string().url().optional().catch(undefined)
 );
 
 const optionalString = z.preprocess(
@@ -24,7 +24,7 @@ const optionalString = z.preprocess(
 
 const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().catch(fallbackAppUrl()),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional().default(""),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional().default("").catch(""),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: optionalString,
   SUPABASE_SERVICE_ROLE_KEY: optionalString,
   CLOUDINARY_CLOUD_NAME: optionalString,
@@ -33,7 +33,7 @@ const envSchema = z.object({
   CLOUDINARY_UPLOAD_FOLDER: z.string().default("stylemate-ai"),
   OPENAI_API_KEY: optionalString,
   OPENAI_VISION_MODEL: z.string().min(1).default("gpt-5-mini"),
-  AI_RECOMMENDATION_TIMEOUT_MS: z.coerce.number().int().positive().default(18000),
+  AI_RECOMMENDATION_TIMEOUT_MS: z.coerce.number().int().positive().default(18000).catch(18000),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_PRO_PRICE_ID: z.string().optional(),

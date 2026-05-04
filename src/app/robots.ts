@@ -1,13 +1,15 @@
 import type { MetadataRoute } from "next";
-import { env } from "@/config/env";
+import { getAppUrl } from "@/lib/env-url";
 
 export default function robots(): MetadataRoute.Robots {
+  const appUrl = getAppUrl();
+
   return {
     rules: {
       userAgent: "*",
       allow: "/",
       disallow: ["/dashboard", "/api", "/login", "/signup", "/reset-password", "/forgot-password"]
     },
-    sitemap: `${env.NEXT_PUBLIC_APP_URL}/sitemap.xml`
+    sitemap: `${appUrl}/sitemap.xml`
   };
 }

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
+import { getAppUrl } from "@/lib/env-url";
 
 type EnvFeature = "auth" | "cloudinary" | "openai" | "stripe" | "monitoring" | "cron";
 
@@ -13,18 +14,6 @@ export class EnvConfigurationError extends Error {
     super(message);
     this.name = "EnvConfigurationError";
   }
-}
-
-function fallbackAppUrl() {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL;
-  }
-
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-
-  return "http://localhost:3000";
 }
 
 function isPlaceholderEnvValue(value: string | undefined) {
@@ -55,7 +44,10 @@ const optionalUrl = z.preprocess(
 );
 
 const envSchema = z.object({
-  NEXT_PUBLIC_APP_URL: z.string().url().catch(fallbackAppUrl()),
+  NEXT_PUBLIC_APP_URL: z.preprocess(
+    (value) => getAppUrl(typeof value === "string" ? value : undefined),
+    z.string().url()
+  ),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional().default("").catch(""),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: optionalString,
   SUPABASE_SERVICE_ROLE_KEY: optionalString,

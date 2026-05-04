@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { env } from "@/config/env";
+import { getAppUrl } from "@/lib/env-url";
 
 const connectSrc =
   process.env.NODE_ENV === "production"
@@ -57,7 +57,7 @@ export function assertSameOrigin(request: NextRequest) {
     return false;
   }
 
-  return origin === new URL(env.NEXT_PUBLIC_APP_URL).origin;
+  return origin === request.nextUrl.origin || origin === new URL(getAppUrl()).origin;
 }
 
 export function assertApiIntent(request: NextRequest) {

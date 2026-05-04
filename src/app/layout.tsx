@@ -3,6 +3,7 @@ import { Geist_Mono, Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import { Analytics } from "@/components/monitoring/analytics";
 import { ErrorMonitor } from "@/components/monitoring/error-monitor";
+import { getAppUrl } from "@/lib/env-url";
 import "./globals.css";
 
 const inter = Inter({
@@ -16,11 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 function getMetadataBase() {
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
-
-  return new URL(appUrl);
+  return new URL(getAppUrl());
 }
 
 export const metadata: Metadata = {

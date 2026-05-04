@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { env, requireFeatureEnv } from "@/config/env";
+import { getAppUrl } from "@/lib/env-url";
 
 export type StripeCheckoutSession = {
   id: string;
@@ -37,12 +38,13 @@ export async function createProCheckoutSession({
 }) {
   assertStripeConfigured();
 
+  const appUrl = getAppUrl(env.NEXT_PUBLIC_APP_URL);
   const params = new URLSearchParams();
   append(params, "mode", "subscription");
   append(params, "line_items[0][price]", env.STRIPE_PRO_PRICE_ID);
   append(params, "line_items[0][quantity]", 1);
-  append(params, "success_url", `${env.NEXT_PUBLIC_APP_URL}/upgrade/success?session_id={CHECKOUT_SESSION_ID}`);
-  append(params, "cancel_url", `${env.NEXT_PUBLIC_APP_URL}/dashboard?checkout=cancelled`);
+  append(params, "success_url", `${appUrl}/upgrade/success?session_id={CHECKOUT_SESSION_ID}`);
+  append(params, "cancel_url", `${appUrl}/dashboard?checkout=cancelled`);
   append(params, "client_reference_id", userId);
   append(params, "metadata[userId]", userId);
   append(params, "subscription_data[metadata][userId]", userId);

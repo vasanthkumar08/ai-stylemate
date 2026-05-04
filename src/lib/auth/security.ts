@@ -1,6 +1,6 @@
 import { cookies, headers } from "next/headers";
-import { env } from "@/config/env";
 import { verifySignedCsrfToken } from "@/lib/auth/csrf-token";
+import { getAppUrl } from "@/lib/env-url";
 import { CSRF_COOKIE_NAME } from "./constants";
 import type { AuthActionState } from "./action-state";
 
@@ -30,7 +30,7 @@ export async function verifySameOriginRequest() {
     return;
   }
 
-  const appOrigin = new URL(env.NEXT_PUBLIC_APP_URL).origin;
+  const appOrigin = new URL(getAppUrl()).origin;
   const requestOrigin = getOriginFromHeaders(headerStore);
 
   if (origin !== requestOrigin && origin !== appOrigin) {
@@ -53,7 +53,7 @@ function getOriginFromHeaders(headerStore: Headers) {
   const host = headerStore.get("x-forwarded-host") ?? headerStore.get("host");
 
   if (!host) {
-    return new URL(env.NEXT_PUBLIC_APP_URL).origin;
+    return new URL(getAppUrl()).origin;
   }
 
   const forwardedProto = headerStore.get("x-forwarded-proto")?.split(",")[0]?.trim();

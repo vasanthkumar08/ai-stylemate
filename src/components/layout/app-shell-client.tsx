@@ -107,6 +107,9 @@ export function AppShellClient({ children, csrfToken, role }: { children: ReactN
                 </div>
               ) : null}
             </div>
+            <div className="mt-3 border-t border-[#c6c9e7]/70 pt-3">
+              <LogoutButton csrfToken={csrfToken} variant={collapsed ? "button" : "menu"} />
+            </div>
           </div>
         </div>
       </aside>
@@ -136,6 +139,9 @@ export function AppShellClient({ children, csrfToken, role }: { children: ReactN
                 {item.label}
               </Link>
             ))}
+            <div className="border-t border-[#c6c9e7]/70 pt-2">
+              <LogoutButton csrfToken={csrfToken} variant="menu" />
+            </div>
           </nav>
         ) : null}
       </header>
@@ -164,7 +170,7 @@ export function AppShellClient({ children, csrfToken, role }: { children: ReactN
       <nav
         className={cn(
           "fixed inset-x-3 bottom-3 z-40 grid gap-1 rounded-2xl border border-white/70 bg-white/84 p-1.5 shadow-2xl shadow-[#363b6c]/15 backdrop-blur-xl lg:hidden",
-          role === "admin" ? "grid-cols-5" : "grid-cols-4"
+          role === "admin" ? "grid-cols-6" : "grid-cols-5"
         )}
       >
         {visibleBottomNavItems.map((item) => {
@@ -187,6 +193,7 @@ export function AppShellClient({ children, csrfToken, role }: { children: ReactN
             </Link>
           );
         })}
+        <LogoutButton csrfToken={csrfToken} variant="bottom-nav" />
       </nav>
     </div>
   );

@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   AlertCircle,
@@ -67,7 +66,6 @@ function matchesCategory(item: WardrobeDashboardViewItem, category: string) {
 }
 
 export function WardrobeDashboardView({ items, error }: WardrobeDashboardViewProps) {
-  const router = useRouter();
   const { toast, ToastViewport } = useToast();
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
   const [category, setCategory] = useState<(typeof categoryFilters)[number]>("All");
@@ -78,7 +76,7 @@ export function WardrobeDashboardView({ items, error }: WardrobeDashboardViewPro
   const [isGenerating, setIsGenerating] = useState(false);
   const [recommendationMessage, setRecommendationMessage] = useState<string | null>(null);
   const [recommendationError, setRecommendationError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(() => new Set());
 
   const visibleSourceItems = useMemo(
     () => items.filter((item) => !deletedIds.has(item.id)),
@@ -107,17 +105,12 @@ export function WardrobeDashboardView({ items, error }: WardrobeDashboardViewPro
   );
 
   async function deleteItem(item: WardrobeDashboardViewItem) {
-    if (deletingId) {
+    if (deletingIds.has(item.id)) {
       return;
     }
 
-    const confirmed = window.confirm(`Delete "${item.name}" from your wardrobe?`);
-
-    if (!confirmed) {
-      return;
-    }
-
-    setDeletingId(item.id);
+    setDeletingIds((current) => new Set(current).add(item.id));
+    setDeletedIds((current) => new Set(current).add(item.id));
 
     try {
       const response = await fetch(`/api/wardrobe/items/${encodeURIComponent(item.id)}`, {
@@ -129,18 +122,23 @@ export function WardrobeDashboardView({ items, error }: WardrobeDashboardViewPro
       if (!response.ok) {
         throw new Error(data.error ?? "Could not delete wardrobe item.");
       }
-
-      setDeletedIds((current) => new Set(current).add(item.id));
-      toast({ title: "Wardrobe item deleted", description: `${item.name} was removed.`, tone: "success" });
-      router.refresh();
     } catch (caughtError) {
+      setDeletedIds((current) => {
+        const next = new Set(current);
+        next.delete(item.id);
+        return next;
+      });
       toast({
         title: "Could not delete item",
         description: caughtError instanceof Error ? caughtError.message : "Please try again.",
         tone: "error"
       });
     } finally {
-      setDeletingId(null);
+      setDeletingIds((current) => {
+        const next = new Set(current);
+        next.delete(item.id);
+        return next;
+      });
     }
   }
 
@@ -329,10 +327,10 @@ export function WardrobeDashboardView({ items, error }: WardrobeDashboardViewPro
                         className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/90 text-red-600 opacity-0 shadow-sm backdrop-blur transition hover:bg-red-50 group-hover:opacity-100 focus:opacity-100"
                         type="button"
                         onClick={() => void deleteItem(item)}
-                        disabled={deletingId === item.id}
+                        disabled={deletingIds.has(item.id)}
                         aria-label={`Delete ${item.name}`}
                       >
-                        {deletingId === item.id ? (
+                        {deletingIds.has(item.id) ? (
                           <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                         ) : (
                           <Trash2 className="size-4" aria-hidden="true" />

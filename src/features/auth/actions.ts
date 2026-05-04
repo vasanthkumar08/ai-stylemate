@@ -1,8 +1,11 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { isSupabaseAuthConfigured } from "@/config/env";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route-handler";
+import { CSRF_COOKIE_NAME } from "@/lib/auth/constants";
 import {
   type AuthActionState,
   getAuthErrorMessage,
@@ -248,9 +251,12 @@ export async function logoutAction(formData: FormData) {
     await validateAuthAction("logout", formData);
     const supabase = await createSupabaseRouteHandlerClient();
     await supabase.auth.signOut();
+    const cookieStore = await cookies();
+    cookieStore.delete(CSRF_COOKIE_NAME);
+    revalidatePath("/", "layout");
   } catch {
-    redirect("/login" as never);
+    redirect("/" as never);
   }
 
-  redirect("/login" as never);
+  redirect("/" as never);
 }

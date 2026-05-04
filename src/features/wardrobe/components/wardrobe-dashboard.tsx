@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -86,14 +85,13 @@ function filterMatches(item: WardrobeDashboardItem, filter: string) {
 }
 
 export function WardrobeDashboard({ items }: { items: WardrobeDashboardItem[] }) {
-  const router = useRouter();
   const { toast, ToastViewport } = useToast();
   const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set());
   const [activeFilter, setActiveFilter] = useState<(typeof filters)[number]["value"]>("all");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<(typeof sortOptions)[number]["value"]>("newest");
   const [page, setPage] = useState(1);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(() => new Set());
 
   const visibleSourceItems = useMemo(
     () => items.filter((item) => !deletedIds.has(item.id)),
@@ -132,17 +130,12 @@ export function WardrobeDashboard({ items }: { items: WardrobeDashboardItem[] })
   }
 
   async function deleteItem(item: WardrobeDashboardItem) {
-    if (deletingId) {
+    if (deletingIds.has(item.id)) {
       return;
     }
 
-    const confirmed = window.confirm(`Delete "${item.name}" from your wardrobe?`);
-
-    if (!confirmed) {
-      return;
-    }
-
-    setDeletingId(item.id);
+    setDeletingIds((current) => new Set(current).add(item.id));
+    setDeletedIds((current) => new Set(current).add(item.id));
 
     try {
       const response = await fetch(`/api/wardrobe/items/${encodeURIComponent(item.id)}`, {
@@ -154,18 +147,23 @@ export function WardrobeDashboard({ items }: { items: WardrobeDashboardItem[] })
       if (!response.ok) {
         throw new Error(data.error ?? "Could not delete wardrobe item.");
       }
-
-      setDeletedIds((current) => new Set(current).add(item.id));
-      toast({ title: "Wardrobe item deleted", description: `${item.name} was removed.`, tone: "success" });
-      router.refresh();
     } catch (caughtError) {
+      setDeletedIds((current) => {
+        const next = new Set(current);
+        next.delete(item.id);
+        return next;
+      });
       toast({
         title: "Could not delete item",
         description: caughtError instanceof Error ? caughtError.message : "Please try again.",
         tone: "error"
       });
     } finally {
-      setDeletingId(null);
+      setDeletingIds((current) => {
+        const next = new Set(current);
+        next.delete(item.id);
+        return next;
+      });
     }
   }
 
@@ -280,10 +278,10 @@ export function WardrobeDashboard({ items }: { items: WardrobeDashboardItem[] })
                     className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/90 text-red-600 opacity-0 shadow-sm backdrop-blur transition hover:bg-red-50 group-hover:opacity-100 focus:opacity-100"
                     type="button"
                     onClick={() => void deleteItem(item)}
-                    disabled={deletingId === item.id}
+                    disabled={deletingIds.has(item.id)}
                     aria-label={`Delete ${item.name}`}
                   >
-                    {deletingId === item.id ? (
+                    {deletingIds.has(item.id) ? (
                       <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                     ) : (
                       <Trash2 className="size-4" aria-hidden="true" />

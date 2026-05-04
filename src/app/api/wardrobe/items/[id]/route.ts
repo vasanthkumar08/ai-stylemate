@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { z } from "zod";
 import { deleteCloudinaryImage } from "@/lib/cloudinary/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route-handler";
@@ -48,7 +49,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return jsonError("Delete request was blocked.", 403);
   }
 
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const parsedId = z.string().uuid().safeParse(rawId);
+
+  if (!parsedId.success) {
+    return jsonError("Wardrobe item was not found.", 404);
+  }
+
+  const id = parsedId.data;
   const supabase = await createSupabaseRouteHandlerClient();
   const {
     data: { user },

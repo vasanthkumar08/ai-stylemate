@@ -37,6 +37,23 @@ const publicAssetPaths = new Set([
 ]);
 const publicAssetPrefixes = ["/_next/", "/icons/", "/images/", "/fonts/", "/public/"];
 
+function isLocalDevelopmentHost(hostname: string) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function isVercelPreviewHost(hostname: string) {
+  const normalized = hostname.toLowerCase();
+
+  return normalized.includes("git-") && normalized.includes(".vercel.app");
+}
+
+function getRequestHostname(request: NextRequest) {
+  const forwardedHost = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const host = forwardedHost?.split(",")[0]?.trim() || request.nextUrl.hostname;
+
+  return host.split(":")[0]?.toLowerCase() || request.nextUrl.hostname.toLowerCase();
+}
+
 function hasFileExtension(pathname: string) {
   return /\/[^/]+\.[^/]+$/.test(pathname);
 }
@@ -75,6 +92,30 @@ function isAdminPath(pathname: string) {
 
 function originalPathWithSearch(request: NextRequest) {
   return `${request.nextUrl.pathname}${request.nextUrl.search}`;
+}
+
+function getPreviewDomainRedirect(request: NextRequest) {
+  const hostname = getRequestHostname(request);
+
+  if (
+    isLocalDevelopmentHost(hostname) ||
+    !isVercelPreviewHost(hostname) ||
+    isPublicAssetPath(request.nextUrl.pathname)
+  ) {
+    return null;
+  }
+
+  const productionUrl = new URL(env.NEXT_PUBLIC_APP_URL);
+  const productionHostname = productionUrl.hostname.toLowerCase();
+
+  if (isLocalDevelopmentHost(productionHostname) || productionHostname === hostname) {
+    return null;
+  }
+
+  productionUrl.pathname = request.nextUrl.pathname;
+  productionUrl.search = request.nextUrl.search;
+
+  return productionUrl;
 }
 
 function logMiddlewareBypass(request: NextRequest, reason: string) {
@@ -167,6 +208,12 @@ export async function middleware(request: NextRequest) {
   console.info("[stylemate-middleware]", {
     pathname
   });
+
+  const previewRedirectUrl = getPreviewDomainRedirect(request);
+
+  if (previewRedirectUrl) {
+    return applySecurityHeaders(NextResponse.redirect(previewRedirectUrl));
+  }
 
   if (isPublicAssetPath(pathname)) {
     logMiddlewareBypass(request, "public-asset");

@@ -8,12 +8,53 @@ import { checkRateLimit } from "@/lib/security/rate-limit";
 import { getAppUserRole, isActiveAdmin } from "@/roles/service";
 import type { Database } from "@/types/database";
 
-const protectedRoutes = ["/dashboard", "/admin", "/wardrobe", "/outfits", "/scan", "/profile"];
+const protectedRoutes = [
+  "/dashboard",
+  "/admin",
+  "/wardrobe",
+  "/outfits",
+  "/scan",
+  "/profile",
+  "/account"
+];
 const authRoutes = ["/login", "/signup", "/forgot-password", "/reset-password"];
-const publicApiRoutes = ["/api/health", "/api/stripe/webhook", "/api/cron/reset-usage"];
+const publicRoutes = ["/", "/login", "/signup", "/pricing", "/about"];
+const publicApiRoutes = [
+  "/api/public",
+  "/api/health",
+  "/api/stripe/webhook",
+  "/api/cron/reset-usage"
+];
+const publicAssetPaths = new Set([
+  "/manifest.webmanifest",
+  "/favicon.ico",
+  "/icon.png",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/apple-icon.png",
+  "/robots.txt",
+  "/sitemap.xml"
+]);
+const publicAssetPrefixes = ["/_next/", "/images/", "/fonts/"];
+
+function hasFileExtension(pathname: string) {
+  return /\/[^/]+\.[^/]+$/.test(pathname);
+}
+
+function isPublicAssetPath(pathname: string) {
+  return (
+    publicAssetPaths.has(pathname) ||
+    publicAssetPrefixes.some((prefix) => pathname.startsWith(prefix)) ||
+    hasFileExtension(pathname)
+  );
+}
 
 function isProtectedPath(pathname: string) {
   return protectedRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
+function isPublicRoute(pathname: string) {
+  return publicRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
 function isAuthPath(pathname: string) {
@@ -34,6 +75,13 @@ function isAdminPath(pathname: string) {
 
 function originalPathWithSearch(request: NextRequest) {
   return `${request.nextUrl.pathname}${request.nextUrl.search}`;
+}
+
+function logMiddlewareBypass(request: NextRequest, reason: string) {
+  console.info("[stylemate-middleware-bypass]", {
+    path: request.nextUrl.pathname,
+    reason
+  });
 }
 
 function logMiddlewareAuthState(
@@ -114,6 +162,22 @@ function setCsrfCookieIfNeeded(request: NextRequest, response: NextResponse) {
 }
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  console.info("[stylemate-middleware]", {
+    pathname
+  });
+
+  if (isPublicAssetPath(pathname)) {
+    logMiddlewareBypass(request, "public-asset");
+    return applySecurityHeaders(NextResponse.next({ request }));
+  }
+
+  if (isPublicApiPath(pathname)) {
+    logMiddlewareBypass(request, "public-api");
+    return applySecurityHeaders(NextResponse.next({ request }));
+  }
+
   const rateLimitedResponse = rateLimitAuthRequest(request);
 
   if (rateLimitedResponse) {
@@ -124,11 +188,18 @@ export async function middleware(request: NextRequest) {
     request
   });
 
-  const pathname = request.nextUrl.pathname;
   const isOAuthCallback = pathname === "/auth/callback" || pathname.startsWith("/auth/callback/");
   const protectedPath = isProtectedPath(pathname);
+  const publicPath = isPublicRoute(pathname);
   const authPath = isAuthPath(pathname);
   const apiPath = isApiPath(pathname);
+
+  console.info("[stylemate-middleware-protected-check]", {
+    pathname,
+    protectedPath,
+    publicPath,
+    apiPath
+  });
 
   if (isOAuthCallback) {
     return applySecurityHeaders(response);
@@ -249,6 +320,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next|favicon.ico|manifest\\.webmanifest|robots\\.txt|sitemap\\.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2?)$).*)"
+    "/((?!_next/|images/|fonts/|api/public/|manifest\\.webmanifest$|favicon\\.ico$|icon\\.png$|icon-192\\.png$|icon-512\\.png$|apple-icon\\.png$|robots\\.txt$|sitemap\\.xml$|.*\\.[^/]+$).*)"
   ]
 };

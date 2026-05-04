@@ -35,7 +35,7 @@ const publicAssetPaths = new Set([
   "/robots.txt",
   "/sitemap.xml"
 ]);
-const publicAssetPrefixes = ["/_next/", "/images/", "/fonts/"];
+const publicAssetPrefixes = ["/_next/", "/icons/", "/images/", "/fonts/", "/public/"];
 
 function hasFileExtension(pathname: string) {
   return /\/[^/]+\.[^/]+$/.test(pathname);
@@ -320,6 +320,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/|images/|fonts/|api/public/|manifest\\.webmanifest$|favicon\\.ico$|icon\\.png$|icon-192\\.png$|icon-512\\.png$|apple-icon\\.png$|robots\\.txt$|sitemap\\.xml$|.*\\.[^/]+$).*)"
+    "/((?!_next/|icons/|images/|fonts/|public/|api/public/|manifest\\.webmanifest$|favicon\\.ico$|icon\\.png$|icon-192\\.png$|icon-512\\.png$|apple-icon\\.png$|robots\\.txt$|sitemap\\.xml$|.*\\.[^/]+$).*)"
   ]
 };
